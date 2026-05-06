@@ -3,9 +3,80 @@
 <head>
   <meta charset="UTF-8">
   <title>Allobébé-IA</title>
+  <style>
+    body {
+      background-color: #fff0f5;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+    h1 { color: #e91e8c; font-size: 2em; }
+    p { color: #555; }
+    img {
+      width: 150px;
+      margin: 20px;
+    }
+    button {
+      background-color: #e91e8c;
+      color: white;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 25px;
+      font-size: 1em;
+      margin: 10px;
+      cursor: pointer;
+    }
+    #reponse {
+      background: white;
+      border-radius: 15px;
+      padding: 20px;
+      margin-top: 20px;
+      color: #333;
+    }
+    input {
+      padding: 10px;
+      width: 80%;
+      border-radius: 20px;
+      border: 2px solid #e91e8c;
+      margin: 10px;
+    }
+  </style>
 </head>
 <body>
-  <h1>Bienvenue sur Allobébé-IA</h1>
-  <p>Application d'intelligence artificielle dédiée aux bébés.</p>
+  <h1>👶 Allobébé-IA</h1>
+  <p>Application d'intelligence artificielle dédiée aux bébés</p>
+  <img src="https://cdn-icons-png.flaticon.com/512/3984/3984463.png" alt="bébé">
+
+  <br>
+  <input type="text" id="question" placeholder="Posez votre question sur votre bébé...">
+  <br>
+  <button onclick="poserQuestion()">💬 Demander à l'IA</button>
+  <button onclick="document.getElementById('question').value=''">🗑️ Effacer</button>
+
+  <div id="reponse">Les réponses de l'IA apparaîtront ici...</div>
+
+  <script>
+    async function poserQuestion() {
+      const q = document.getElementById('question').value;
+      if (!q) return;
+      document.getElementById('reponse').innerText = "⏳ L'IA réfléchit...";
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': 'sk-ant-api03-bM9...eQAA	
+            ',
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 500,
+          messages: [{ role: 'user', content: 'Tu es un expert bébé. Réponds en français: ' + q }]
+        })
+      });
+      const data = await res.json();
+      document.getElementById('reponse').innerText = data.content[0].text;
+    }
+  </script>
 </body>
 </html>
