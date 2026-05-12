@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>NOVA IA — Vision-First</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+:root{--c:#00f5ff;--bg:#030812}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;width:100%;background:var(--bg);color:#dff0ff;font-family:'Share Tech Mono',monospace;overflow:hidden}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:rgba(0,245,255,.25);border-radius:2px}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(0,245,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,245,255,.025) 1px,transparent 1px);
+  background-size:52px 52px}
+#app{position:relative;z-index:1;height:100vh;display:flex;flex-direction:column}
+
+/* HEADER */
+#header{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;
+  padding:8px 16px;background:rgba(0,18,36,.75);backdrop-filter:blur(14px);
+  border-bottom:1px solid rgba(0,245,255,.18)}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-ring{width:32px;height:32px;border-radius:50%;border:2px solid var(--c);
+  display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--c);
+  animation:glow 2.2s ease-in-out infinite}
+.logo-title{font-family:'Orbitron',monospace;font-size:13px;font-weight:900;letter-spacing:.18em;color:var(--c)}
+.logo-sub{font-size:7px;color:rgba(0,245,255,.4);letter-spacing:.2em}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.dot{width:6px;height:6px;border-radius:50%;background:#ff4444;animation:blink 1.5s infinite}
+.dot.live{background:#00ff9d}
+.lbl{font-size:9px;letter-spacing:.1em;color:#ff4444}
+.lbl.live{color:#00ff9d}
+#cam-toggle{padding:5px 13px;border-radius:4px;cursor:pointer;background:rgba(0,245,255,.12);
+  border:1px solid var(--c);color:var(--c);font-family:inherit;font-size:10px;letter-spacing:.1em}
+#cam-toggle.on{background:rgba(255,68,68,.14);border-color:#ff4444;color:#ff4444}
+
+/* TOOLBAR */
+#toolbar{flex-shrink:0;display:flex;align-items:center;gap:5px;padding:7px 12px;
+  background:rgba(0,8,20,.8);border-bottom:1px solid rgba(0,245,255,.07);
+  overflow-x:auto;flex-wrap:nowrap}
+#toolbar::-webkit-scrollbar{height:2px}
+.agent-btn{flex-shrink:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:2px;width:52px;height:48px;border-radius:7px;cursor:pointer;
+  background:rgba(0,18,36,.5);border:1px solid rgba(255,255,255,.07);
+  color:rgba(255,255,255,.38);font-family:inherit;font-size:7px;letter-spacing:.07em;
+  text-transform:uppercase;transition:all .18s}
+.agent-btn .ic{font-size:16px}
+.agent-btn.active{border-color:var(--c);color:var(--c);background:rgba(0,245,255,.1);
+  box-shadow:0 0 12px rgba(0,245,255,.28)}
+.sep{flex-shrink:0;width:1px;height:34px;background:rgba(0,245,255,.1);margin:0 3px}
+.act-btn{flex-shrink:0;padding:5px 9px;border-radius:5px;cursor:pointer;
+  background:rgba(0,20,40,.6);border:1px solid rgba(0,245,255,.2);color:var(--c);
+  font-family:inherit;font-size:10px;white-space:nowrap;transition:all .15s}
+.act-btn:disabled{opacity:.35;cursor:not-allowed}
+#scan-btn{flex-shrink:0;margin-left:auto;padding:6px 16px;border-radius:5px;cursor:pointer;
+  background:rgba(0,245,255,.14);border:1px solid var(--c);color:var(--c);
+  font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:.12em;
+  box-shadow:0 0 10px rgba(0,245,255,.28)}
+#scan-btn:disabled{opacity:.35;cursor:not-allowed;box-shadow:none}
+
+/* CAMERA */
+#cam-wrap{flex-shrink:0;height:210px;position:relative;background:#010b18;
+  overflow:hidden;border-bottom:1px solid rgba(0,245,255,.12)}
+#cam-video{width:100%;height:100%;object-fit:cover;display:none}
+#cam-idle{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.rr{position:absolute;top:50%;left:50%;width:110px;height:110px;border-radius:50%;
+  border:1px solid rgba(0,245,255,.22);transform:translate(-50%,-50%)}
+.rr:nth-child(1){animation:rp 3s ease-out 0s infinite}
+.rr:nth-child(2){animation:rp 3s ease-out 1s infinite}
+.rr:nth-child(3){animation:rp 3s ease-out 2s infinite}
+#cam-eye{position:relative;z-index:2;width:46px;height:46px;border-radius:50%;
+  border:2px solid var(--c);display:flex;align-items:center;justify-content:center;
+  font-size:20px;color:var(--c);animation:glow 2s ease-in-out infinite}
+#cam-hint{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
+  font-size:9px;color:rgba(0,245,255,.3);letter-spacing:.12em;text-align:center;pointer-events:none}
+#cam-err{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
+  font-size:9px;color:#ff6b6b;text-align:center;display:none;max-width:80%}
+#sweep{position:absolute;left:0;right:0;height:2px;top:0;display:none;
+  background:linear-gradient(90deg,transparent,var(--c),transparent);
+  box-shadow:0 0 10px var(--c);animation:scanLine 1.4s linear infinite;z-index:10}
+#pbar{position:absolute;bottom:0;left:0;height:3px;width:0%;
+  background:linear-gradient(90deg,var(--c),rgba(0,245,255,.55));
+  box-shadow:0 0 8px var(--c);transition:width .15s ease;z-index:10}
+.cor{position:absolute;width:14px;height:14px}
+.cor.tl{top:8px;left:8px;border-top:2px solid rgba(0,245,255,.4);border-left:2px solid rgba(0,245,255,.4)}
+.cor.tr{top:8px;right:8px;border-top:2px solid rgba(0,245,255,.4);border-right:2px solid rgba(0,245,255,.4)}
+.cor.bl{bottom:8px;left:8px;border-bottom:2px solid rgba(0,245,255,.4);border-left:2px solid rgba(0,245,255,.4)}
+.cor.br{bottom:8px;right:8px;border-bottom:2px solid rgba(0,245,255,.4);border-right:2px solid rgba(0,245,255,.4)}
+.bbox{position:absolute;pointer-events:none;z-index:8;border:1px solid var(--c);animation:fi .3s ease}
+.bbox-lbl{position:absolute;top:-16px;left:0;background:rgba(0,245,255,.85);color:#000;font-size:7px;padding:1px 4px}
+.bk{position:absolute;width:6px;height:6px}
+.bk.tl{top:-1px;left:-1px;border-top:2px solid var(--c);border-left:2px solid var(--c)}
+.bk.tr{top:-1px;right:-1px;border-top:2px solid var(--c);border-right:2px solid var(--c)}
+.bk.bl{bottom:-1px;left:-1px;border-bottom:2px solid var(--c);border-left:2px solid var(--c)}
+.bk.br{bottom:-1px;right:-1px;border-bottom:2px solid var(--c);border-right:2px solid var(--c)}
+
+/* MESSAGES */
+#bottom{flex:1;display:flex;flex-direction:column;min-height:0}
+#messages{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:9px}
+.msg-card{background:rgba(0,20,42,.6);backdrop-filter:blur(12px);
+  border:1px solid rgba(0,245,255,.13);border-left:3px solid var(--c);
+  border-radius:8px;padding:12px 14px;animation:fi .4s ease;flex-shrink:0}
+.msg-meta{display:flex;align-items:center;gap:8px;font-size:8px;color:var(--c);letter-spacing:.13em;margin-bottom:8px}
+.msg-meta .ts{margin-left:auto;opacity:.4}
+.msg-body{font-size:13px;line-height:1.78;color:rgba(224,240,255,.92)}
+.msg-hist{background:rgba(0,14,30,.45);border:1px solid rgba(0,245,255,.08);
+  border-left:2px solid rgba(0,245,255,.28);border-radius:6px;padding:9px 12px;opacity:.52;flex-shrink:0}
+.msg-hist .q{font-size:8px;color:rgba(0,245,255,.36);margin-bottom:4px}
+.msg-hist .a{font-size:11px;color:rgba(224,240,255,.6);line-height:1.5}
+.empty{text-align:center;padding:28px 0;color:rgba(0,245,255,.18);font-size:10px;letter-spacing:.15em;flex-shrink:0}
+.empty .ic{font-size:28px;margin-bottom:8px;display:block}
+.dots{display:flex;gap:6px;align-items:center}
+.dots span{width:6px;height:6px;border-radius:50%;background:var(--c);animation:blink 1.2s infinite}
+.dots span:nth-child(2){animation-delay:.2s}
+.dots span:nth-child(3){animation-delay:.4s}
+
+/* INPUT BAR */
+#input-bar{flex-shrink:0;display:flex;align-items:center;gap:8px;
+  padding:9px 14px;background:rgba(0,6,18,.92);border-top:1px solid rgba(0,245,255,.09)}
+#mic-btn{flex-shrink:0;width:34px;height:34px;border-radius:50%;background:transparent;
+  border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.38);font-size:14px;cursor:pointer}
+#mic-btn.active{background:rgba(0,245,255,.12);border-color:var(--c);color:var(--c)}
+#txt{flex:1;min-width:0;background:rgba(0,18,36,.6);border:1px solid rgba(0,245,255,.15);
+  border-radius:5px;padding:8px 12px;color:#dff0ff;font-family:inherit;font-size:12px;outline:none}
+#txt::placeholder{color:rgba(0,245,255,.25)}
+#send-btn{flex-shrink:0;padding:8px 14px;border-radius:5px;cursor:pointer;
+  background:rgba(0,245,255,.12);border:1px solid var(--c);color:var(--c);font-size:14px;font-family:inherit}
+#send-btn:disabled{opacity:.3;cursor:not-allowed}
+
+/* KEYFRAMES */
+@keyframes glow{0%,100%{box-shadow:0 0 6px currentColor}50%{box-shadow:0 0 20px currentColor,0 0 40px currentColor}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes rp{0%{transform:translate(-50%,-50%) scale(.35);opacity:.9}100%{transform:translate(-50%,-50%) scale(2.3);opacity:0}}
+@keyframes scanLine{0%{top:0%}100%{top:100%}}
+@keyframes fi{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes glitchA{0%{clip-path:inset(0 0 100% 0)}15%{clip-path:inset(20% 0 55% 0);transform:translateX(-4px)}30%{clip-path:inset(55% 0 20% 0);transform:translateX(4px)}50%{clip-path:inset(0 0 0 0);transform:translateX(0)}}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HEADER -->
+  <div id="header">
+    <div class="logo">
+      <div class="logo-ring">◉</div>
+      <div>
+        <div class="logo-title" id="logo-title">NOVA IA</div>
+        <div class="logo-sub">VISION-FIRST × GROQ</div>
+      </div>
+    </div>
+    <div class="hdr-right">
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="dot" id="dot"></div>
+        <span class="lbl" id="lbl">OFFLINE</span>
+      </div>
+      <button id="cam-toggle" onclick="toggleCam()">▶ CAMÉRA</button>
+    </div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div id="toolbar">
+    <button class="agent-btn active" data-id="vision"   data-color="#00f5ff" onclick="setAgent(this)"><span class="ic">👁</span>Vision</button>
+    <button class="agent-btn"        data-id="voice"    data-color="#b44eff" onclick="setAgent(this)"><span class="ic">🎙</span>Voice</button>
+    <button class="agent-btn"        data-id="commerce" data-color="#ffbe00" onclick="setAgent(this)"><span class="ic">💎</span>Commerce</button>
+    <button class="agent-btn"        data-id="creator"  data-color="#ff4e8b" onclick="setAgent(this)"><span class="ic">✦</span>Creator</button>
+    <button class="agent-btn"        data-id="learning" data-color="#00ff9d" onclick="setAgent(this)"><span class="ic">⟳</span>Learning</button>
+    <button class="agent-btn"        data-id="security" data-color="#ff6b35" onclick="setAgent(this)"><span class="ic">◈</span>Security</button>
+    <div class="sep"></div>
+    <button class="act-btn" onclick="qs('Scanner')">🔍 Scanner</button>
+    <button class="act-btn" onclick="qs('Analyser')">💬 Analyser</button>
+    <button class="act-btn" onclick="qs('Rapport')">📊 Rapport</button>
+    <button class="act-btn" onclick="qs('Automatiser')">🚀 Auto</button>
+    <button id="scan-btn" onclick="runScan()">⬡ SCAN IA</button>
+  </div>
+
+  <!-- CAMERA -->
+  <div id="cam-wrap">
+    <video id="cam-video" autoplay muted playsinline></video>
+    <div id="cam-idle">
+      <div class="rr"></div><div class="rr"></div><div class="rr"></div>
+      <div id="cam-eye">👁</div>
+      <div id="cam-hint">APPUIE SUR ▶ CAMÉRA POUR COMMENCER</div>
+      <div id="cam-err"></div>
+    </div>
+    <div id="sweep"></div>
+    <div id="pbar"></div>
+    <div class="cor tl"></div><div class="cor tr"></div>
+    <div class="cor bl"></div><div class="cor br"></div>
+  </div>
+
+  <!-- MESSAGES -->
+  <div id="bottom">
+    <div id="messages">
+      <div class="empty" id="empty">
+        <span class="ic">◎</span>
+        PRÊT POUR ANALYSE<br>
+        <span style="font-size:8px">LANCE UN SCAN OU ÉCRIS UN MESSAGE</span>
+      </div>
+    </div>
+    <div id="input-bar">
+      <button id="mic-btn" onclick="toggleMic()">🎙</button>
+      <input id="txt" type="text" placeholder="Pose une question à NOVA IA…" onkeydown="if(event.key==='Enter')send()"/>
+      <button id="send-btn" onclick="send()">↗</button>
+    </div>
+  </div>
+</div>
+<canvas id="cap" style="display:none"></canvas>
+
+<script>
+// ══════════════════════════════════
+// ⚠️  METS TA CLÉ GROQ ICI ⬇️
+const GROQ_KEY = "gsk_REMPLACE_PAR_TA_CLE_GROQ";
+// ══════════════════════════════════
+
+const AGENTS = {
+  vision:   {icon:"👁", label:"VISION",   color:"#00f5ff", ctx:"Tu es un agent Vision IA futuriste. Analyse et décris ce que tu vois comme un système de vision artificielle avancé. Sois précis et fascinant."},
+  voice:    {icon:"🎙", label:"VOICE",    color:"#b44eff", ctx:"Tu es un assistant vocal IA. Réponds de manière conversationnelle et naturelle."},
+  commerce: {icon:"💎", label:"COMMERCE", color:"#ffbe00", ctx:"Tu es un agent Commerce IA. Identifie les opportunités business et estime les valeurs marchandes."},
+  creator:  {icon:"✦", label:"CREATOR",  color:"#ff4e8b", ctx:"Tu es un agent Créateur IA. Génère des idées créatives, scripts TikTok ou concepts visuels."},
+  learning: {icon:"⟳", label:"LEARNING", color:"#00ff9d", ctx:"Tu es un agent Learning IA. Explique de façon éducative et enrichissante comme un coach visuel."},
+  security: {icon:"◈", label:"SECURITY", color:"#ff6b35", ctx:"Tu es un agent Sécurité IA. Analyse les risques potentiels et éléments suspects."},
+};
+const PROMPTS = [
+  "Qu'est-ce que tu vois dans cet environnement ? Décris-le de façon futuriste.",
+  "Analyse cette scène comme un agent IA Vision-First. Identifie les éléments clés.",
+  "Que remarques-tu ici ? Donne une analyse intelligente et concise.",
+];
+
+let agent="vision", camOn=false, busy=false, micOn=false, stream=null, history=[], pTimer=null;
+
+function setAgent(btn){
+  document.querySelectorAll('.agent-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  agent=btn.dataset.id;
+  document.documentElement.style.setProperty('--c',AGENTS[agent].color);
+}
+
+async function toggleCam(){ camOn ? stopCam() : await startCam(); }
+
+async function startCam(){
+  document.getElementById('cam-err').style.display='none';
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+    const v=document.getElementById('cam-video');
+    v.srcObject=stream; v.style.display='block';
+    document.getElementById('cam-idle').style.display='none';
+    camOn=true;
+    document.getElementById('dot').classList.add('live');
+    document.getElementById('lbl').classList.add('live');
+    document.getElementById('lbl').textContent='LIVE';
+    const t=document.getElementById('cam-toggle');
+    t.textContent='◼ STOP'; t.classList.add('on');
+  }catch{
+    const e=document.getElementById('cam-err');
+    e.textContent='⚠ Accès refusé — active les permissions caméra';
+    e.style.display='block';
+    document.getElementById('cam-hint').style.display='none';
+  }
+}
+
+function stopCam(){
+  if(stream)stream.getTracks().forEach(t=>t.stop());
+  stream=null;
+  const v=document.getElementById('cam-video');
+  v.srcObject=null; v.style.display='none';
+  document.getElementById('cam-idle').style.display='flex';
+  document.getElementById('cam-hint').style.display='block';
+  camOn=false;
+  document.getElementById('dot').classList.remove('live');
+  document.getElementById('lbl').classList.remove('live');
+  document.getElementById('lbl').textContent='OFFLINE';
+  const t=document.getElementById('cam-toggle');
+  t.textContent='▶ CAMÉRA'; t.classList.remove('on');
+}
+
+function captureFrame(){
+  const v=document.getElementById('cam-video'),c=document.getElementById('cap');
+  if(!v||!v.videoWidth)return null;
+  c.width=v.videoWidth; c.height=v.videoHeight;
+  c.getContext('2d').drawImage(v,0,0);
+  return c.toDataURL('image/jpeg',0.5).split(',')[1];
+}
+
+function startProg(){
+  let p=0; document.getElementById('pbar').style.width='0%';
+  document.getElementById('sweep').style.display='block';
+  pTimer=setInterval(()=>{p+=Math.random()*14;if(p>=92){p=92;clearInterval(pTimer);}document.getElementById('pbar').style.width=p+'%';},160);
+}
+function endProg(){
+  clearInterval(pTimer);
+  document.getElementById('pbar').style.width='100%';
+  document.getElementById('sweep').style.display='none';
+  setTimeout(()=>{document.getElementById('pbar').style.width='0%';clearBoxes();},2500);
+}
+function showBoxes(){
+  clearBoxes();
+  const w=document.getElementById('cam-wrap');
+  [{label:'Surface',x:18,y:28,wd:38,h:24},{label:'Object',x:54,y:42,wd:28,h:30},{label:'Zone',x:10,y:62,wd:44,h:18}]
+  .forEach(o=>{
+    const d=document.createElement('div');d.className='bbox';
+    d.style.cssText=`left:${o.x}%;top:${o.y}%;width:${o.wd}%;height:${o.h}%`;
+    d.innerHTML=`<span class="bbox-lbl">${o.label.toUpperCase()}</span><div class="bk tl"></div><div class="bk tr"></div><div class="bk bl"></div><div class="bk br"></div>`;
+    w.appendChild(d);
+  });
+}
+function clearBoxes(){document.querySelectorAll('.bbox').forEach(b=>b.remove());}
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function scrollBot(){const m=document.getElementById('messages');m.scrollTop=m.scrollHeight;}
+function rmEmpty(){const e=document.getElementById('empty');if(e)e.remove();}
+
+function addLoading(){
+  rmEmpty();
+  const ag=AGENTS[agent];
+  const d=document.createElement('div');d.className='msg-card';d.id='lcard';
+  d.style.borderLeftColor=ag.color;
+  d.innerHTML=`<div class="msg-meta" style="color:${ag.color}"><span>${ag.icon}</span><span>${ag.label} AGENT — GROQ IA…</span></div><div class="dots"><span></span><span></span><span></span></div>`;
+  document.getElementById('messages').appendChild(d);scrollBot();
+}
+function rmLoading(){const c=document.getElementById('lcard');if(c)c.remove();}
+
+function addResponse(text){
+  const ag=AGENTS[agent];
+  const d=document.createElement('div');d.className='msg-card';
+  d.style.borderLeftColor=ag.color;
+  d.innerHTML=`<div class="msg-meta" style="color:${ag.color}"><span>${ag.icon}</span><span>${ag.label} AGENT — NOVA IA</span><span class="ts">${new Date().toLocaleTimeString()}</span></div><div class="msg-body">${esc(text)}</div>`;
+  document.getElementById('messages').appendChild(d);scrollBot();
+}
+
+function setUI(on){
+  document.getElementById('scan-btn').disabled=on;
+  document.getElementById('scan-btn').textContent=on?'ANALYSE…':'⬡ SCAN IA';
+  document.querySelectorAll('.act-btn').forEach(b=>b.disabled=on);
+  document.getElementById('send-btn').disabled=on;
+}
+
+async function runScan(customPrompt){
+  if(busy)return;
+
+  // Vérifie si la clé est configurée
+  if(GROQ_KEY==="gsk_REMPLACE_PAR_TA_CLE_GROQ"){
+    addResponse("⚠ Configure ta clé Groq dans le fichier HTML. Cherche la ligne : const GROQ_KEY = \"gsk_REMPLACE...\" et mets ta vraie clé.");
+    return;
+  }
+
+  busy=true; setUI(true); startProg(); showBoxes(); addLoading();
+
+  const ag=AGENTS[agent];
+  const prompt=customPrompt ? customPrompt : ag.ctx+'\n\n'+PROMPTS[Math.floor(Math.random()*PROMPTS.length)];
+
+  try{
+    // Groq API — modèle texte (llama)
+    // Note: Groq ne supporte pas encore la vision dans l'API standard
+    // On utilise le texte avec contexte de l'agent
+    const finalPrompt = camOn
+      ? prompt + "\n\n[La caméra est active — l'utilisateur pointe vers un environnement réel. Génère une analyse futuriste réaliste.]"
+      : prompt + "\n\n[Caméra inactive — génère une analyse fictive futuriste basée sur le rôle de cet agent.]";
+
+    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':`Bearer ${GROQ_KEY}`
+      },
+      body:JSON.stringify({
+        model:'llama-3.3-70b-versatile',
+        max_tokens:500,
+        messages:[
+          {role:'system',content:"Tu es NOVA, une IA Vision-First ultra-avancée. Ré
